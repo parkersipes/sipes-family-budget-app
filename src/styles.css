@@ -1,0 +1,54 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+html, body, #root {
+  height: 100%;
+  background: #0f0f11;
+  color: #f4f4f5;
+  -webkit-font-smoothing: antialiased;
+  font-family: 'Montserrat', system-ui, sans-serif;
+  overscroll-behavior-y: none;
+}
+
+body {
+  /* iOS safe area */
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+}
+
+.tnum {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum';
+}
+
+.press {
+  transition: transform 120ms ease;
+}
+.press:active {
+  transform: scale(0.97);
+}
+
+.sheet-enter {
+  transform: translateY(100%);
+}
+.sheet-enter-active {
+  transform: translateY(0);
+  transition: transform 220ms cubic-bezier(.2,.8,.2,1);
+}
+
+.bar-fill {
+  transition: width 420ms cubic-bezier(.2,.8,.2,1), background-color 220ms ease;
+}
+
+input, select, textarea, button {
+  font-family: inherit;
+}
+
+/* Hide number input spinners */
+input[type='number']::-webkit-outer-spin-button,
+input[type='number']::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+input[type='number'] { -moz-appearance: textfield; }
