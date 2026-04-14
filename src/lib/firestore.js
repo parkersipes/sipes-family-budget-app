@@ -15,6 +15,7 @@ import { HOUSEHOLD_ID } from '../config.js';
 
 const householdRef = () => doc(db, 'households', HOUSEHOLD_ID);
 const fixedBillsCol = () => collection(householdRef(), 'fixedBills');
+const fixedIncomeCol = () => collection(householdRef(), 'fixedIncome');
 const monthsCol = () => collection(householdRef(), 'months');
 export const monthDocRef = (monthKey) => doc(monthsCol(), monthKey);
 export const categoriesCol = (monthKey) => collection(monthDocRef(monthKey), 'categories');
@@ -35,7 +36,22 @@ export async function updateFixedBill(id, patch) {
 export async function deleteFixedBill(id) {
   return deleteDoc(doc(fixedBillsCol(), id));
 }
-export { fixedBillsCol };
+export { fixedBillsCol, fixedIncomeCol };
+
+// ---------- Fixed income (household-level, e.g. salary) ----------
+export async function addFixedIncome(entry) {
+  return addDoc(fixedIncomeCol(), {
+    ...entry,
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  });
+}
+export async function updateFixedIncome(id, patch) {
+  return updateDoc(doc(fixedIncomeCol(), id), { ...patch, updatedAt: serverTimestamp() });
+}
+export async function deleteFixedIncome(id) {
+  return deleteDoc(doc(fixedIncomeCol(), id));
+}
 
 // ---------- Month meta ----------
 export async function getMonthMeta(monthKey) {

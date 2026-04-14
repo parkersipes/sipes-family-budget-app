@@ -1,18 +1,16 @@
+import { Link } from 'react-router-dom';
 import { formatDollars } from '../lib/money.js';
 
 export default function TopBar({
-  monthKey,
   monthLabel,
   cashRemaining,
-  totalBudgeted,
-  totalSpent,
+  envelopeBudgeted,
+  envelopeSpent,
   onPrev,
   onNext,
-  onSettings,
-  onLogout,
   isCurrent,
 }) {
-  const pct = totalBudgeted > 0 ? Math.min(100, (totalSpent / totalBudgeted) * 100) : 0;
+  const pct = envelopeBudgeted > 0 ? Math.min(100, (envelopeSpent / envelopeBudgeted) * 100) : 0;
 
   return (
     <div className="sticky top-0 z-20 bg-bg/95 backdrop-blur border-b border-line">
@@ -44,8 +42,13 @@ export default function TopBar({
             </div>
           </div>
           <div className="flex gap-2">
-            <IconBtn onClick={onSettings} label="Settings"><Gear /></IconBtn>
-            <IconBtn onClick={onLogout} label="Sign out"><LogOut /></IconBtn>
+            <Link
+              to="/settings"
+              aria-label="Settings"
+              className="w-9 h-9 rounded-lg border border-line text-ink-muted flex items-center justify-center press"
+            >
+              <Gear />
+            </Link>
           </div>
         </div>
 
@@ -59,23 +62,11 @@ export default function TopBar({
             />
           </div>
           <div className="tnum text-ink-muted text-xs">
-            {formatDollars(totalSpent)} / {formatDollars(totalBudgeted)}
+            {formatDollars(envelopeSpent)} / {formatDollars(envelopeBudgeted)} envelopes
           </div>
         </div>
       </div>
     </div>
-  );
-}
-
-function IconBtn({ children, label, ...props }) {
-  return (
-    <button
-      {...props}
-      aria-label={label}
-      className="w-9 h-9 rounded-lg border border-line text-ink-muted flex items-center justify-center press"
-    >
-      {children}
-    </button>
   );
 }
 
@@ -91,15 +82,6 @@ function Gear() {
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <circle cx="12" cy="12" r="3" />
       <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
-    </svg>
-  );
-}
-function LogOut() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-      <polyline points="16 17 21 12 16 7" />
-      <line x1="21" y1="12" x2="9" y2="12" />
     </svg>
   );
 }

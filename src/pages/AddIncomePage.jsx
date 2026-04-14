@@ -1,22 +1,20 @@
 import { useState } from 'react';
-import Sheet from './Sheet.jsx';
-import { TextField, AmountField, PrimaryButton } from './Field.jsx';
-import { toCents, todayISO } from '../lib/money.js';
+import { useNavigate, useParams } from 'react-router-dom';
+import PageHeader from '../components/PageHeader.jsx';
+import { TextField, AmountField, PrimaryButton } from '../components/Field.jsx';
+import { toCents, todayISO, currentMonthKey, monthLabel } from '../lib/money.js';
 import { addIncome } from '../lib/firestore.js';
 
-export default function AddIncomeSheet({ open, onClose, monthKey, uid }) {
+export default function AddIncomePage({ user }) {
+  const nav = useNavigate();
+  const params = useParams();
+  const monthKey = params.monthKey || currentMonthKey();
+
   const [source, setSource] = useState('');
   const [amount, setAmount] = useState('');
   const [date, setDate] = useState(todayISO());
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
-
-  function reset() {
-    setSource('');
-    setAmount('');
-    setDate(todayISO());
-    setErr('');
-  }
 
   async function onSubmit(e) {
     e.preventDefault();
@@ -30,32 +28,29 @@ export default function AddIncomeSheet({ open, onClose, monthKey, uid }) {
         source: source.trim(),
         amount: cents,
         date,
-        createdBy: uid || null,
+        isFixed: false,
+        createdBy: user?.uid || null,
       });
-      reset();
-      onClose();
+      nav(-1);
     } catch (e) {
       setErr(e?.message || 'Failed to save.');
-    } finally {
       setBusy(false);
     }
   }
 
   return (
-    <Sheet
-      open={open}
-      onClose={() => {
-        reset();
-        onClose();
-      }}
-      title="Add Income"
-    >
-      <form onSubmit={onSubmit} className="space-y-3 pb-4">
+    <div className="min-h-full pb-10">
+      <PageHeader title="Add Side Income" subtitle={monthLabel(monthKey)} />
+      <form onSubmit={onSubmit} className="px-5 pt-4 space-y-3">
+        <div className="text-ink-muted text-sm bg-bg-raised border border-line rounded-lg p-3">
+          For a side hustle or one-off earning. Recurring salary lives in{' '}
+          <span className="text-ink">Settings → Income</span>.
+        </div>
         <TextField
           label="Source"
           value={source}
           onChange={(e) => setSource(e.target.value)}
-          placeholder="e.g. Parker paycheck"
+          placeholder="e.g. Marketplace sale"
           autoFocus
         />
         <AmountField label="Amount" value={amount} onChange={setAmount} />
@@ -68,6 +63,6 @@ export default function AddIncomeSheet({ open, onClose, monthKey, uid }) {
         {err && <div className="text-bad text-sm">{err}</div>}
         <PrimaryButton disabled={busy}>{busy ? 'Saving…' : 'Save'}</PrimaryButton>
       </form>
-    </Sheet>
+    </div>
   );
 }

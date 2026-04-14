@@ -1,13 +1,12 @@
 import { useEffect, useState } from 'react';
 import Sheet from './Sheet.jsx';
-import { TextField, AmountField, SelectField, PrimaryButton } from './Field.jsx';
+import { TextField, AmountField, PrimaryButton } from './Field.jsx';
 import { toCents, formatDollars } from '../lib/money.js';
 import { addFixedBill, updateFixedBill } from '../lib/firestore.js';
 
-export default function AddFixedBillSheet({ open, onClose, bill, categories }) {
+export default function AddFixedBillSheet({ open, onClose, bill }) {
   const [name, setName] = useState('');
   const [amount, setAmount] = useState('');
-  const [categoryId, setCategoryId] = useState('');
   const [dueDay, setDueDay] = useState('1');
   const [err, setErr] = useState('');
   const [busy, setBusy] = useState(false);
@@ -16,12 +15,10 @@ export default function AddFixedBillSheet({ open, onClose, bill, categories }) {
     if (bill) {
       setName(bill.name || '');
       setAmount(((bill.amount || 0) / 100).toString());
-      setCategoryId(bill.categoryId || '');
       setDueDay(String(bill.dueDay || 1));
     } else {
       setName('');
       setAmount('');
-      setCategoryId('');
       setDueDay('1');
     }
     setErr('');
@@ -33,11 +30,10 @@ export default function AddFixedBillSheet({ open, onClose, bill, categories }) {
     const cents = toCents(amount);
     if (!name.trim()) return setErr('Name is required.');
     if (cents <= 0) return setErr('Amount must be greater than zero.');
-    if (!categoryId) return setErr('Pick a category.');
     const day = Math.min(Math.max(parseInt(dueDay, 10) || 1, 1), 31);
     setBusy(true);
     try {
-      const payload = { name: name.trim(), amount: cents, categoryId, dueDay: day };
+      const payload = { name: name.trim(), amount: cents, dueDay: day };
       if (bill?.id) await updateFixedBill(bill.id, payload);
       else await addFixedBill(payload);
       onClose();
@@ -55,18 +51,10 @@ export default function AddFixedBillSheet({ open, onClose, bill, categories }) {
           label="Name"
           value={name}
           onChange={(e) => setName(e.target.value)}
-          placeholder="e.g. Rent"
+          placeholder="e.g. Mortgage"
           autoFocus
         />
         <AmountField label="Amount" value={amount} onChange={setAmount} />
-        <SelectField label="Category" value={categoryId} onChange={setCategoryId}>
-          <option value="">Pick a category</option>
-          {categories.map((c) => (
-            <option key={c.id} value={c.id}>
-              {c.name}
-            </option>
-          ))}
-        </SelectField>
         <TextField
           label="Due day of month"
           type="number"
@@ -76,8 +64,8 @@ export default function AddFixedBillSheet({ open, onClose, bill, categories }) {
           onChange={(e) => setDueDay(e.target.value)}
         />
         <div className="text-ink-faint text-xs">
-          Applied automatically on the {dueDay || '1'} of each new month as{' '}
-          <span className="tnum">{formatDollars(toCents(amount))}</span>.
+          Auto-deducted from income each month as{' '}
+          <span className="tnum">{formatDollars(toCents(amount))}</span>. Fixed bills aren't tied to envelopes.
         </div>
         {err && <div className="text-bad text-sm">{err}</div>}
         <PrimaryButton disabled={busy}>{busy ? 'Saving…' : 'Save'}</PrimaryButton>

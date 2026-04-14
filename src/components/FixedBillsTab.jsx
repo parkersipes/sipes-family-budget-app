@@ -1,8 +1,7 @@
 import { formatDollars } from '../lib/money.js';
 
-export default function FixedBillsTab({ fixedTransactions, categories, onManage }) {
+export default function FixedBillsTab({ fixedTransactions, onManage }) {
   const total = fixedTransactions.reduce((a, t) => a + (t.amount || 0), 0);
-  const catById = Object.fromEntries(categories.map((c) => [c.id, c]));
   const sorted = fixedTransactions
     .slice()
     .sort((a, b) => (a.date || '').localeCompare(b.date || ''));
@@ -36,33 +35,18 @@ export default function FixedBillsTab({ fixedTransactions, categories, onManage 
         </div>
       ) : (
         <div className="divide-y divide-line border border-line rounded-xl bg-bg-raised overflow-hidden">
-          {sorted.map((t) => {
-            const cat = catById[t.categoryId];
-            return (
-              <div key={t.id} className="flex items-center justify-between px-4 py-3 gap-3">
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2">
-                    <LockIcon />
-                    <div className="text-ink font-medium truncate">{t.vendor}</div>
-                  </div>
-                  <div className="text-ink-faint text-xs mt-1 flex items-center gap-2">
-                    {cat && (
-                      <span className="flex items-center gap-1.5">
-                        <span
-                          className="inline-block w-2 h-2 rounded-full"
-                          style={{ background: cat.color }}
-                        />
-                        {cat.name}
-                      </span>
-                    )}
-                    <span>·</span>
-                    <span>due {formatDay(t.date)}</span>
-                  </div>
+          {sorted.map((t) => (
+            <div key={t.id} className="flex items-center justify-between px-4 py-3 gap-3">
+              <div className="min-w-0 flex-1 flex items-center gap-2">
+                <LockIcon />
+                <div className="min-w-0">
+                  <div className="text-ink font-medium truncate">{t.vendor}</div>
+                  <div className="text-ink-faint text-xs mt-0.5">due {formatDay(t.date)}</div>
                 </div>
-                <div className="tnum text-ink">{formatDollars(t.amount)}</div>
               </div>
-            );
-          })}
+              <div className="tnum text-ink">{formatDollars(t.amount)}</div>
+            </div>
+          ))}
         </div>
       )}
     </div>

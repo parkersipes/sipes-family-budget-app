@@ -17,10 +17,22 @@ export default function OverflowModal({
       .sort((a, b) => b.remaining - a.remaining);
   }, [donorCandidates, targetCategory]);
 
-  const pulled = selected.reduce(
-    (a, id) => a + (allocatable.find((c) => c.id === id)?.remaining || 0),
-    0
-  );
+  // Distribute the overdraft greedily across selected donors in the order they were picked.
+  const pulls = useMemo(() => {
+    let left = overdraftCents;
+    const out = [];
+    for (const id of selected) {
+      if (left <= 0) break;
+      const cat = allocatable.find((c) => c.id === id);
+      if (!cat) continue;
+      const take = Math.min(cat.remaining, left);
+      if (take > 0) out.push({ categoryId: id, amount: take });
+      left -= take;
+    }
+    return out;
+  }, [selected, allocatable, overdraftCents]);
+
+  const pulled = pulls.reduce((a, p) => a + p.amount, 0);
   const covered = pulled >= overdraftCents;
 
   if (!open) return null;
@@ -35,17 +47,18 @@ export default function OverflowModal({
       <div className="relative w-full max-w-sm bg-bg-raised border border-line rounded-2xl p-5">
         <div className="text-ink text-lg font-semibold mb-1">Budget Overflow</div>
         <div className="text-ink-muted text-sm mb-4">
-          This expense exceeds{' '}
-          <span className="text-ink font-medium">{targetCategory?.name}</span> by{' '}
+          This expense exceeds the{' '}
+          <span className="text-ink font-medium">{targetCategory?.name}</span> envelope by{' '}
           <span className="text-bad tnum font-semibold">{formatDollars(overdraftCents)}</span>.
-          Choose categories to pull from.
+          Choose envelopes to pull from.
         </div>
         <div className="max-h-64 overflow-y-auto divide-y divide-line border border-line rounded-lg">
           {allocatable.length === 0 && (
-            <div className="p-4 text-sm text-ink-muted">No other categories have remaining budget.</div>
+            <div className="p-4 text-sm text-ink-muted">No other envelopes have remaining budget.</div>
           )}
           {allocatable.map((c) => {
             const on = selected.includes(c.id);
+            const pull = pulls.find((p) => p.categoryId === c.id);
             return (
               <button
                 key={c.id}
@@ -60,7 +73,14 @@ export default function OverflowModal({
                   <span className="text-ink truncate">{c.name}</span>
                 </div>
                 <div className="flex items-center gap-3">
-                  <span className="tnum text-ink-muted text-sm">{formatDollars(c.remaining)}</span>
+                  <div className="text-right">
+                    <div className="tnum text-ink-muted text-xs">has {formatDollars(c.remaining)}</div>
+                    {pull && (
+                      <div className="tnum text-accent text-xs font-medium">
+                        pull {formatDollars(pull.amount)}
+                      </div>
+                    )}
+                  </div>
                   <span className={`w-5 h-5 rounded-full border ${on ? 'bg-accent border-accent' : 'border-line'}`} />
                 </div>
               </button>
@@ -78,8 +98,8 @@ export default function OverflowModal({
             Cancel
           </button>
           <button
-            disabled={!covered || selected.length === 0}
-            onClick={() => onConfirm(selected)}
+            disabled={!covered || pulls.length === 0}
+            onClick={() => onConfirm(pulls)}
             className="flex-1 bg-accent text-black font-semibold rounded-lg py-3 press disabled:opacity-50"
           >
             Confirm

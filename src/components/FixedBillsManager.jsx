@@ -3,10 +3,8 @@ import { formatDollars } from '../lib/money.js';
 import { deleteFixedBill } from '../lib/firestore.js';
 import AddFixedBillSheet from './AddFixedBillSheet.jsx';
 
-export default function FixedBillsManager({ bills, categories }) {
+export default function FixedBillsManager({ bills }) {
   const [editing, setEditing] = useState(null); // null = closed, {} = new, bill = edit
-  const catById = Object.fromEntries(categories.map((c) => [c.id, c]));
-
   const sorted = bills.slice().sort((a, b) => (a.dueDay || 0) - (b.dueDay || 0));
 
   async function onDelete(bill) {
@@ -17,7 +15,7 @@ export default function FixedBillsManager({ bills, categories }) {
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
-        <div className="text-ink text-sm font-medium">Fixed Bills</div>
+        <div className="text-ink text-sm font-medium">Bills</div>
         <button
           onClick={() => setEditing({})}
           className="text-accent text-sm press"
@@ -31,58 +29,47 @@ export default function FixedBillsManager({ bills, categories }) {
         </div>
       )}
       <div className="divide-y divide-line border border-line rounded-xl bg-bg-raised">
-        {sorted.map((b) => {
-          const cat = catById[b.categoryId];
-          const orphan = !cat;
-          return (
-            <div key={b.id} className="flex items-center justify-between px-4 py-3 gap-3">
-              <button
-                onClick={() => setEditing(b)}
-                className="flex items-center gap-2.5 min-w-0 flex-1 text-left press"
-              >
-                {cat ? (
-                  <span
-                    className="inline-block w-2.5 h-2.5 rounded-full flex-shrink-0"
-                    style={{ background: cat.color }}
-                  />
-                ) : (
-                  <span className="inline-block w-2.5 h-2.5 rounded-full bg-bad flex-shrink-0" />
-                )}
-                <div className="min-w-0">
-                  <div className="text-ink truncate">{b.name}</div>
-                  <div className="text-ink-faint text-xs truncate">
-                    {orphan ? (
-                      <span className="text-bad">⚠ No matching category for this month.</span>
-                    ) : (
-                      <>
-                        {cat.name} · day {b.dueDay || 1}
-                      </>
-                    )}
-                  </div>
-                </div>
-              </button>
-              <div className="flex items-center gap-3">
-                <div className="tnum text-ink">{formatDollars(b.amount)}</div>
-                <button
-                  onClick={() => onDelete(b)}
-                  className="text-ink-faint press p-1"
-                  aria-label="Delete"
-                >
-                  <TrashIcon />
-                </button>
+        {sorted.map((b) => (
+          <div key={b.id} className="flex items-center justify-between px-4 py-3 gap-3">
+            <button
+              onClick={() => setEditing(b)}
+              className="flex items-center gap-2.5 min-w-0 flex-1 text-left press"
+            >
+              <LockIcon />
+              <div className="min-w-0">
+                <div className="text-ink truncate">{b.name}</div>
+                <div className="text-ink-faint text-xs truncate">day {b.dueDay || 1}</div>
               </div>
+            </button>
+            <div className="flex items-center gap-3">
+              <div className="tnum text-ink">{formatDollars(b.amount)}</div>
+              <button
+                onClick={() => onDelete(b)}
+                className="text-ink-faint press p-1"
+                aria-label="Delete"
+              >
+                <TrashIcon />
+              </button>
             </div>
-          );
-        })}
+          </div>
+        ))}
       </div>
 
       <AddFixedBillSheet
         open={editing != null}
         onClose={() => setEditing(null)}
         bill={editing && editing.id ? editing : null}
-        categories={categories}
       />
     </div>
+  );
+}
+
+function LockIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-accent flex-shrink-0">
+      <rect x="3" y="11" width="18" height="11" rx="2" />
+      <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+    </svg>
   );
 }
 
