@@ -59,7 +59,7 @@ export default function AddIncomePage({ user }) {
           label="Note"
           value={note}
           onChange={(e) => setNote(e.target.value)}
-          placeholder="Optional: e.g. Store return, Sold Item, etc."
+          placeholder="Optional - e.g. Store return, Sold Item, etc."
         />
         <TextField
           label="Date"
