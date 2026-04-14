@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import { formatDollars } from '../lib/money.js';
 
 export default function AvailableStrip({
@@ -8,11 +9,20 @@ export default function AvailableStrip({
   envelopeBudgetCents,
   unallocatedCents,
   variableRemaining,
+  sideIncomeHref,
 }) {
   return (
     <div className="bg-bg-raised border border-line rounded-xl p-4">
       <Row label="Expected income" value={fixedIncomeCents} />
-      {sideIncomeCents > 0 && <Row label="Side income" value={sideIncomeCents} sign />}
+      {sideIncomeCents > 0 && (
+        sideIncomeHref ? (
+          <Link to={sideIncomeHref} className="block press -mx-1 px-1 rounded">
+            <Row label="Side income" value={sideIncomeCents} sign link />
+          </Link>
+        ) : (
+          <Row label="Side income" value={sideIncomeCents} sign />
+        )
+      )}
       <Row label="Fixed bills" value={-fixedBillsCents} />
       <div className="border-t border-line my-2" />
       <div className="flex items-center justify-between">
@@ -62,11 +72,18 @@ export default function AvailableStrip({
   );
 }
 
-function Row({ label, value, muted, sign }) {
+function Row({ label, value, muted, sign, link }) {
   const display = sign ? formatDollars(value, { sign: true }) : formatDollars(value);
   return (
     <div className="flex items-center justify-between py-1 text-sm">
-      <span className={muted ? 'text-ink-muted' : 'text-ink-muted'}>{label}</span>
+      <span className={`inline-flex items-center gap-1 ${muted ? 'text-ink-muted' : 'text-ink-muted'}`}>
+        {label}
+        {link && (
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-ink-faint">
+            <polyline points="9 18 15 12 9 6" />
+          </svg>
+        )}
+      </span>
       <span className={`tnum ${muted ? 'text-ink-muted' : 'text-ink'}`}>
         {display}
       </span>

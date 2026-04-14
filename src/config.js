@@ -1,6 +1,19 @@
 // Both users share a single household. Not a secret — just a Firestore doc ID.
 export const HOUSEHOLD_ID = 'sipes-family';
 
+// Side income categories. Kept as short keys with display labels.
+export const SIDE_INCOME_KINDS = [
+  { key: 'return', label: 'Store return' },
+  { key: 'gig', label: 'Side gig' },
+  { key: 'sale', label: 'Sale' },
+  { key: 'other', label: 'Other' },
+];
+
+export function sideIncomeLabel(kind) {
+  const found = SIDE_INCOME_KINDS.find((k) => k.key === kind);
+  return found ? found.label : 'Other';
+}
+
 // Curated palette for categories (user picks one when creating).
 export const CATEGORY_PALETTE = [
   '#f5a524', // amber

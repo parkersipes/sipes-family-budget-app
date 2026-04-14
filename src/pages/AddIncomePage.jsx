@@ -1,16 +1,18 @@
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import PageHeader from '../components/PageHeader.jsx';
-import { TextField, AmountField, PrimaryButton } from '../components/Field.jsx';
+import { TextField, AmountField, SelectField, PrimaryButton } from '../components/Field.jsx';
 import { toCents, todayISO, currentMonthKey, monthLabel } from '../lib/money.js';
 import { addIncome } from '../lib/firestore.js';
+import { SIDE_INCOME_KINDS } from '../config.js';
 
 export default function AddIncomePage({ user }) {
   const nav = useNavigate();
   const params = useParams();
   const monthKey = params.monthKey || currentMonthKey();
 
-  const [source, setSource] = useState('');
+  const [kind, setKind] = useState('return');
+  const [note, setNote] = useState('');
   const [amount, setAmount] = useState('');
   const [date, setDate] = useState(todayISO());
   const [busy, setBusy] = useState(false);
@@ -20,12 +22,13 @@ export default function AddIncomePage({ user }) {
     e.preventDefault();
     setErr('');
     const cents = toCents(amount);
-    if (!source.trim()) return setErr('Source is required.');
+    if (!kind) return setErr('Pick a kind of income.');
     if (cents <= 0) return setErr('Amount must be greater than zero.');
     setBusy(true);
     try {
       await addIncome(monthKey, {
-        source: source.trim(),
+        kind,
+        source: note.trim(),
         amount: cents,
         date,
         isFixed: false,
@@ -43,17 +46,21 @@ export default function AddIncomePage({ user }) {
       <PageHeader title="Add Side Income" subtitle={monthLabel(monthKey)} />
       <form onSubmit={onSubmit} className="px-5 pt-4 space-y-3">
         <div className="text-ink-muted text-sm bg-bg-raised border border-line rounded-lg p-3">
-          For a side hustle or one-off earning. Recurring salary lives in{' '}
+          For one-off earnings. Recurring salary lives in{' '}
           <span className="text-ink">Settings → Income</span>.
         </div>
-        <TextField
-          label="Source"
-          value={source}
-          onChange={(e) => setSource(e.target.value)}
-          placeholder="e.g. Marketplace sale"
-          autoFocus
-        />
+        <SelectField label="Kind" value={kind} onChange={setKind}>
+          {SIDE_INCOME_KINDS.map((k) => (
+            <option key={k.key} value={k.key}>{k.label}</option>
+          ))}
+        </SelectField>
         <AmountField label="Amount" value={amount} onChange={setAmount} />
+        <TextField
+          label="Note"
+          value={note}
+          onChange={(e) => setNote(e.target.value)}
+          placeholder="Optional — e.g. Store return, Sold Item, etc."
+        />
         <TextField
           label="Date"
           type="date"

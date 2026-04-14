@@ -112,6 +112,7 @@ export default function Dashboard({ user }) {
               envelopeBudgetCents={totals.totalBudgeted}
               unallocatedCents={totals.unallocatedCents}
               variableRemaining={totals.variableRemaining}
+              sideIncomeHref={`/m/${monthKey}/income`}
             />
 
             <TabSwitcher

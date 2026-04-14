@@ -118,6 +118,10 @@ export async function addIncome(monthKey, ev) {
   });
 }
 
+export async function updateIncome(monthKey, id, patch) {
+  return updateDoc(doc(incomeCol(monthKey), id), patch);
+}
+
 export async function deleteIncome(monthKey, id) {
   return deleteDoc(doc(incomeCol(monthKey), id));
 }

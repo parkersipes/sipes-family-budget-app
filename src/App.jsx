@@ -9,6 +9,7 @@ import SettingsCategories from './pages/SettingsCategories.jsx';
 import AddTransactionPage from './pages/AddTransactionPage.jsx';
 import AddIncomePage from './pages/AddIncomePage.jsx';
 import CategoryDetailPage from './pages/CategoryDetailPage.jsx';
+import SideIncomePage from './pages/SideIncomePage.jsx';
 
 export default function App() {
   const { user, loading, logout } = useAuth();
@@ -40,6 +41,8 @@ export default function App() {
         <Route path="/m/:monthKey" element={<Dashboard user={user} />} />
         <Route path="/m/:monthKey/category/:categoryId" element={<CategoryDetailPage />} />
         <Route path="/category/:categoryId" element={<CategoryDetailPage />} />
+        <Route path="/m/:monthKey/income" element={<SideIncomePage />} />
+        <Route path="/income" element={<SideIncomePage />} />
 
         <Route path="/settings" element={<SettingsIndex onLogout={handleLogout} />} />
         <Route path="/settings/income" element={<SettingsFixedIncome />} />
