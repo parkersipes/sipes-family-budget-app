@@ -5,6 +5,7 @@ import { TextField, AmountField, SelectField, PrimaryButton } from '../component
 import { toCents, todayISO, currentMonthKey, monthLabel } from '../lib/money.js';
 import { addIncome } from '../lib/firestore.js';
 import { SIDE_INCOME_KINDS } from '../config.js';
+import { userDisplayName } from '../lib/user.js';
 
 export default function AddIncomePage({ user }) {
   const nav = useNavigate();
@@ -33,6 +34,7 @@ export default function AddIncomePage({ user }) {
         date,
         isFixed: false,
         createdBy: user?.uid || null,
+        createdByName: userDisplayName(user),
       });
       nav(-1);
     } catch (e) {

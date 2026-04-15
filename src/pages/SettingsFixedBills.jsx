@@ -10,7 +10,7 @@ export default function SettingsFixedBills() {
   return (
     <div className="min-h-full pb-10">
       <PageHeader
-        title="Fixed Bills"
+        title="Recurring Bills"
         subtitle="Recurring obligations — auto-deducted from income"
         backTo="/settings"
       />

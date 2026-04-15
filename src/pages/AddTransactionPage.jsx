@@ -6,6 +6,7 @@ import { toCents, todayISO, currentMonthKey, monthLabel } from '../lib/money.js'
 import { addTransaction } from '../lib/firestore.js';
 import { useMonth, computeMonthTotals } from '../hooks/useMonth.js';
 import OverflowModal from '../components/OverflowModal.jsx';
+import { userDisplayName } from '../lib/user.js';
 
 export default function AddTransactionPage({ user }) {
   const nav = useNavigate();
@@ -52,6 +53,7 @@ export default function AddTransactionPage({ user }) {
         isFixed: false,
         pulls,
         createdBy: user?.uid || null,
+        createdByName: userDisplayName(user),
       });
       nav(-1);
     } catch (e) {

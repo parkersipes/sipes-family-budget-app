@@ -71,7 +71,10 @@ export default function SideIncomePage() {
                     {sideIncomeLabel(e.kind)}
                     {e.source ? <span className="text-ink-muted font-normal"> · {e.source}</span> : null}
                   </div>
-                  <div className="text-ink-faint text-xs mt-0.5">{e.date}</div>
+                  <div className="text-ink-faint text-xs mt-0.5">
+                    {e.date}
+                    {e.createdByName && <> · by {e.createdByName}</>}
+                  </div>
                 </button>
                 <div className="flex items-center gap-3">
                   <div className="tnum text-ink">{formatDollars(e.amount)}</div>

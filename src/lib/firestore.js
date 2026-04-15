@@ -17,10 +17,13 @@ const householdRef = () => doc(db, 'households', HOUSEHOLD_ID);
 const fixedBillsCol = () => collection(householdRef(), 'fixedBills');
 const fixedIncomeCol = () => collection(householdRef(), 'fixedIncome');
 const monthsCol = () => collection(householdRef(), 'months');
+const monthClosesCol = () => collection(householdRef(), 'monthCloses');
 export const monthDocRef = (monthKey) => doc(monthsCol(), monthKey);
+export const monthCloseDocRef = (monthKey) => doc(monthClosesCol(), monthKey);
 export const categoriesCol = (monthKey) => collection(monthDocRef(monthKey), 'categories');
 export const transactionsCol = (monthKey) => collection(monthDocRef(monthKey), 'transactions');
 export const incomeCol = (monthKey) => collection(monthDocRef(monthKey), 'incomeEvents');
+export { monthClosesCol };
 
 // ---------- Fixed bills (household-level) ----------
 export async function addFixedBill(bill) {
@@ -124,4 +127,30 @@ export async function updateIncome(monthKey, id, patch) {
 
 export async function deleteIncome(monthKey, id) {
   return deleteDoc(doc(incomeCol(monthKey), id));
+}
+
+// ---------- Reconcile a variable recurring bill transaction ----------
+export async function reconcileTransaction(monthKey, txId, actualAmountCents, { uid, name } = {}) {
+  const patch = {
+    actualAmount: actualAmountCents,
+    amount: actualAmountCents,
+    reconciledAt: serverTimestamp(),
+  };
+  if (uid !== undefined) patch.reconciledBy = uid || null;
+  if (name !== undefined) patch.reconciledByName = name || null;
+  await updateDoc(doc(transactionsCol(monthKey), txId), patch);
+}
+
+// ---------- Month close ----------
+export async function writeMonthClose(monthKey, data) {
+  await setDoc(monthCloseDocRef(monthKey), {
+    ...data,
+    closedAt: serverTimestamp(),
+  });
+  await setDoc(monthDocRef(monthKey), { closed: true }, { merge: true });
+}
+
+export async function getMonthClose(monthKey) {
+  const snap = await getDoc(monthCloseDocRef(monthKey));
+  return snap.exists() ? { id: snap.id, ...snap.data() } : null;
 }

@@ -50,3 +50,20 @@ export function todayISO() {
   const day = String(d.getDate()).padStart(2, '0');
   return `${y}-${m}-${day}`;
 }
+
+// A transaction is a recurring bill if it was auto-generated from a household
+// recurring bill entry. `isRecurring` is the new flag; `isFixed` is the legacy
+// equivalent still present on older documents.
+export function isRecurringTx(t) {
+  return !!(t && (t.isRecurring || t.isFixed));
+}
+
+// Effective displayed amount for a recurring-bill transaction. For variable
+// bills, we prefer the reconciled actual; otherwise the estimate; otherwise
+// the raw amount field.
+export function effectiveAmount(t) {
+  if (!t) return 0;
+  if (t.actualAmount != null) return t.actualAmount;
+  if (t.estimatedAmount != null) return t.estimatedAmount;
+  return t.amount || 0;
+}

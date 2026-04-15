@@ -6,6 +6,7 @@ import {
   transactionsCol,
   incomeCol,
 } from '../lib/firestore.js';
+import { isRecurringTx, effectiveAmount } from '../lib/money.js';
 
 export function useMonth(monthKey) {
   const [meta, setMeta] = useState(null);
@@ -59,16 +60,16 @@ export function computeMonthTotals({ meta, categories, transactions, income }) {
   const incomeCents = fixedIncomeCents + sideIncomeCents;
 
   const fixedBillsCents = transactions
-    .filter((t) => t.isFixed)
-    .reduce((a, t) => a + (t.amount || 0), 0);
+    .filter((t) => isRecurringTx(t))
+    .reduce((a, t) => a + effectiveAmount(t), 0);
 
   // Per-category spent, accounting for overflow pulls.
-  // Fixed bills live outside the envelope system — skip them here.
+  // Recurring bills live outside the envelope system — skip them here.
   //   - transaction target absorbs (amount - sum(pulls))
   //   - each pull adds to its donor
   const spentByCategory = {};
   for (const t of transactions) {
-    if (t.isFixed) continue;
+    if (isRecurringTx(t)) continue;
     const pulls = Array.isArray(t.pulls) ? t.pulls : [];
     const pulledTotal = pulls.reduce((a, p) => a + (p.amount || 0), 0);
     const targetAmount = (t.amount || 0) - pulledTotal;
@@ -82,7 +83,10 @@ export function computeMonthTotals({ meta, categories, transactions, income }) {
   }
 
   const totalBudgeted = categories.reduce((a, c) => a + (c.maxBudget || 0), 0);
-  const totalSpent = transactions.reduce((a, t) => a + (t.amount || 0), 0);
+  const totalSpent = transactions.reduce(
+    (a, t) => a + (isRecurringTx(t) ? effectiveAmount(t) : (t.amount || 0)),
+    0
+  );
   const cashRemaining = startingCents + incomeCents - totalSpent;
 
   // "To work with" = net after bills, including any side income.

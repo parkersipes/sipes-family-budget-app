@@ -23,7 +23,7 @@ export default function AvailableStrip({
           <Row label="Side income" value={sideIncomeCents} sign />
         )
       )}
-      <Row label="Fixed bills" value={-fixedBillsCents} />
+      <Row label="Recurring bills" value={-fixedBillsCents} />
       <div className="border-t border-line my-2" />
       <div className="flex items-center justify-between">
         <div className="text-ink text-sm font-medium">To work with</div>

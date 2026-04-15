@@ -2,7 +2,9 @@ import { useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import PageHeader from '../components/PageHeader.jsx';
 import { useMonth, computeMonthTotals } from '../hooks/useMonth.js';
-import { formatDollars, currentMonthKey, monthLabel } from '../lib/money.js';
+import {
+  formatDollars, currentMonthKey, monthLabel, isRecurringTx, effectiveAmount,
+} from '../lib/money.js';
 import { deleteTransaction } from '../lib/firestore.js';
 
 export default function CategoryDetailPage() {
@@ -42,13 +44,16 @@ export default function CategoryDetailPage() {
       }
     }
     return list.sort((a, b) => {
-      if (!!a.isFixed !== !!b.isFixed) return a.isFixed ? -1 : 1;
+      const ar = isRecurringTx(a);
+      const br = isRecurringTx(b);
+      if (ar !== br) return ar ? -1 : 1;
       return (b.date || '').localeCompare(a.date || '');
     });
   }, [cat, monthData.transactions]);
 
+  const isClosed = !!monthData.meta?.closed;
   async function onDelete(id) {
-    if (!isCurrent) return;
+    if (!isCurrent || isClosed) return;
     if (!confirm('Delete this transaction?')) return;
     await deleteTransaction(monthKey, id);
   }
@@ -96,25 +101,29 @@ export default function CategoryDetailPage() {
               <div key={`${t.id}-${t.kind}`} className="px-4 py-3 flex items-center justify-between gap-3">
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
-                    {t.isFixed && <Badge>Fixed</Badge>}
+                    {isRecurringTx(t) && <Badge>Recurring</Badge>}
+                    {t.isVariable && t.actualAmount == null && <Badge accent>⏳ Est.</Badge>}
                     {t.kind === 'pulled' && <Badge accent>Pulled</Badge>}
-                    <div className={`truncate ${t.isFixed ? 'text-ink-muted' : 'text-ink'}`}>
+                    <div className={`truncate ${isRecurringTx(t) ? 'text-ink-muted' : 'text-ink'}`}>
                       {t.vendor}
                     </div>
                   </div>
                   <div className="text-ink-faint text-xs mt-0.5">
                     {t.date}
                     {t.description ? ` · ${t.description}` : ''}
+                    {t.createdByName && !isRecurringTx(t) && (
+                      <> · by {t.createdByName}</>
+                    )}
                     {t.kind === 'pulled' && catById[t.originatorCategoryId] && (
                       <> · covered for {catById[t.originatorCategoryId].name}</>
                     )}
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
-                  <div className={`tnum ${t.isFixed ? 'text-ink-muted' : 'text-ink'}`}>
+                  <div className={`tnum ${isRecurringTx(t) ? 'text-ink-muted' : 'text-ink'}`}>
                     {formatDollars(t.effective)}
                   </div>
-                  {isCurrent && !t.isFixed && t.kind === 'direct' && (
+                  {isCurrent && !isRecurringTx(t) && t.kind === 'direct' && (
                     <button
                       onClick={() => onDelete(t.id)}
                       className="text-ink-faint press p-1"

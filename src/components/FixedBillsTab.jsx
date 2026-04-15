@@ -1,10 +1,20 @@
+import { useState } from 'react';
 import { formatDollars } from '../lib/money.js';
+import ReconcileBillModal from './ReconcileBillModal.jsx';
 
-export default function FixedBillsTab({ fixedTransactions, onManage }) {
-  const total = fixedTransactions.reduce((a, t) => a + (t.amount || 0), 0);
+export default function FixedBillsTab({ fixedTransactions, onManage, monthKey, readOnly }) {
+  const [reconciling, setReconciling] = useState(null);
+
+  const total = fixedTransactions.reduce(
+    (a, t) => a + (t.actualAmount ?? t.estimatedAmount ?? t.amount ?? 0),
+    0
+  );
   const sorted = fixedTransactions
     .slice()
     .sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+  const unreconciledCount = sorted.filter(
+    (t) => t.isVariable && t.actualAmount == null
+  ).length;
 
   return (
     <div className="space-y-3">
@@ -15,6 +25,9 @@ export default function FixedBillsTab({ fixedTransactions, onManage }) {
             <div className="tnum text-3xl font-semibold text-ink mt-1">{formatDollars(total)}</div>
             <div className="text-ink-faint text-xs mt-1">
               {sorted.length} {sorted.length === 1 ? 'bill' : 'bills'} auto-applied
+              {unreconciledCount > 0 && (
+                <span className="text-warn"> · {unreconciledCount} to reconcile</span>
+              )}
             </div>
           </div>
           <button
@@ -28,27 +41,79 @@ export default function FixedBillsTab({ fixedTransactions, onManage }) {
 
       {sorted.length === 0 ? (
         <div className="text-ink-muted text-sm py-10 text-center border border-dashed border-line rounded-xl">
-          No fixed bills for this month.
+          No recurring bills for this month.
           <div className="mt-3">
             <button onClick={onManage} className="text-accent press">Add one in Settings →</button>
           </div>
         </div>
       ) : (
         <div className="divide-y divide-line border border-line rounded-xl bg-bg-raised overflow-hidden">
-          {sorted.map((t) => (
-            <div key={t.id} className="flex items-center justify-between px-4 py-3 gap-3">
-              <div className="min-w-0 flex-1 flex items-center gap-2">
-                <LockIcon />
-                <div className="min-w-0">
-                  <div className="text-ink font-medium truncate">{t.vendor}</div>
-                  <div className="text-ink-faint text-xs mt-0.5">due {formatDay(t.date)}</div>
+          {sorted.map((t) => {
+            const variable = !!t.isVariable;
+            const reconciled = t.actualAmount != null;
+            const displayAmount = t.actualAmount ?? t.estimatedAmount ?? t.amount ?? 0;
+            const delta = variable && reconciled
+              ? (t.estimatedAmount ?? 0) - (t.actualAmount ?? 0)
+              : 0;
+            const clickable = variable && !readOnly;
+            const Wrapper = clickable ? 'button' : 'div';
+            return (
+              <Wrapper
+                key={t.id}
+                onClick={clickable ? () => setReconciling(t) : undefined}
+                className={`w-full flex items-center justify-between px-4 py-3 gap-3 text-left ${
+                  clickable ? 'press' : ''
+                }`}
+              >
+                <div className="min-w-0 flex-1 flex items-center gap-2">
+                  <LockIcon />
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-1.5">
+                      <div className="text-ink font-medium truncate">{t.vendor}</div>
+                      {variable && !reconciled && (
+                        <span className="text-[10px] tracking-wide uppercase text-warn border border-warn/30 rounded px-1.5 py-0.5 flex-shrink-0">
+                          ⏳ Estimated
+                        </span>
+                      )}
+                      {variable && reconciled && (
+                        <span className="text-[10px] tracking-wide uppercase text-ok border border-ok/30 rounded px-1.5 py-0.5 flex-shrink-0">
+                          ✓ Reconciled
+                        </span>
+                      )}
+                    </div>
+                    <div className="text-ink-faint text-xs mt-0.5">
+                      due {formatDay(t.date)}
+                      {variable && reconciled && (
+                        <>
+                          {' · '}
+                          Est. {formatDollars(t.estimatedAmount || 0)} → Actual{' '}
+                          {formatDollars(t.actualAmount || 0)}
+                          {delta !== 0 && (
+                            <span className={delta > 0 ? 'text-ok' : 'text-bad'}>
+                              {' '}
+                              ({delta > 0 ? '+' : ''}
+                              {formatDollars(Math.abs(delta))})
+                            </span>
+                          )}
+                          {t.reconciledByName && <> · by {t.reconciledByName}</>}
+                        </>
+                      )}
+                    </div>
+                  </div>
                 </div>
-              </div>
-              <div className="tnum text-ink">{formatDollars(t.amount)}</div>
-            </div>
-          ))}
+                <div className="tnum text-ink flex-shrink-0">{formatDollars(displayAmount)}</div>
+              </Wrapper>
+            );
+          })}
         </div>
       )}
+
+      <ReconcileBillModal
+        open={!!reconciling}
+        transaction={reconciling}
+        monthKey={monthKey}
+        onClose={() => setReconciling(null)}
+      />
     </div>
   );
 }

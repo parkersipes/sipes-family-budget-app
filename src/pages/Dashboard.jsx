@@ -3,7 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useMonth, computeMonthTotals } from '../hooks/useMonth.js';
 import { useFixedIncome } from '../hooks/useFixedIncome.js';
 import { useFixedBills } from '../hooks/useFixedBills.js';
-import { currentMonthKey, monthLabel, shiftMonth } from '../lib/money.js';
+import { currentMonthKey, monthLabel, shiftMonth, isRecurringTx } from '../lib/money.js';
 import { ensureMonthInitialized, syncCurrentMonthFixedItems } from '../lib/monthInit.js';
 import TopBar from '../components/TopBar.jsx';
 import CategoryCard from '../components/CategoryCard.jsx';
@@ -28,7 +28,7 @@ export default function Dashboard({ user }) {
   // bills/income are actually added, edited, or removed, not on listener echo.
   const fixedBillsSig = useMemo(
     () => fixedBills
-      .map((b) => `${b.id}:${b.amount}:${b.dueDay || 1}:${b.name || ''}`)
+      .map((b) => `${b.id}:${b.amount}:${b.dueDay || 1}:${b.name || ''}:${b.amountType || 'fixed'}`)
       .sort()
       .join('|'),
     [fixedBills]
@@ -64,9 +64,12 @@ export default function Dashboard({ user }) {
     fixedIncomeSig,
   ]);
 
-  const fixedTxs = monthData.transactions.filter((t) => t.isFixed);
+  const fixedTxs = monthData.transactions.filter((t) => isRecurringTx(t));
   const noCategories = !monthData.loading && monthData.categories.length === 0;
   const isFirstEver = !monthData.loading && !monthData.meta?.initialized && fixedIncome.length === 0 && fixedBills.length === 0;
+  const isClosed = !!monthData.meta?.closed;
+  const unreconciledCount = fixedTxs.filter((t) => t.isVariable && t.actualAmount == null).length;
+  const canClose = !isPast && !isClosed && !monthData.loading;
 
   return (
     <div className="min-h-full pb-28">
@@ -91,7 +94,7 @@ export default function Dashboard({ user }) {
           <div className="bg-bg-raised border border-line rounded-xl p-5 text-center">
             <div className="text-ink font-medium mb-1">Welcome — no data yet</div>
             <div className="text-ink-muted text-sm mb-4">
-              Add your fixed income, fixed bills, and envelopes in Settings to get rolling.
+              Add recurring income, fixed bills, and envelopes in Settings to get rolling.
             </div>
             <Link
               to="/settings"
@@ -115,12 +118,41 @@ export default function Dashboard({ user }) {
               sideIncomeHref={`/m/${monthKey}/income`}
             />
 
+            {isClosed && (
+              <div className="border border-ok/40 bg-ok/5 text-ink rounded-xl px-4 py-3 text-sm">
+                <span className="text-ok font-semibold">Closed ✓</span> — this month is archived
+                and read-only.{' '}
+                <Link to={`/m/${monthKey}/summary`} className="text-accent press">
+                  View summary →
+                </Link>
+              </div>
+            )}
+
+            {canClose && (
+              <button
+                onClick={() => nav(`/m/${monthKey}/close`)}
+                className="w-full border border-line bg-bg-raised rounded-xl px-4 py-3 press flex items-center justify-between"
+              >
+                <div className="text-left">
+                  <div className="text-ink font-medium">Close Month</div>
+                  <div className="text-ink-faint text-xs mt-0.5">
+                    {unreconciledCount > 0
+                      ? `${unreconciledCount} bill${unreconciledCount === 1 ? '' : 's'} still to reconcile`
+                      : 'Finalize and see your net result'}
+                  </div>
+                </div>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-ink-faint">
+                  <polyline points="9 18 15 12 9 6" />
+                </svg>
+              </button>
+            )}
+
             <TabSwitcher
               value={tab}
               onChange={setTab}
               tabs={[
                 { value: 'categories', label: 'Envelopes', badge: totals.categoryStates.length || null },
-                { value: 'fixed', label: 'Fixed Bills', badge: fixedTxs.length || null },
+                { value: 'fixed', label: 'Recurring Bills', badge: fixedTxs.length || null },
               ]}
             />
 
@@ -149,13 +181,15 @@ export default function Dashboard({ user }) {
               <FixedBillsTab
                 fixedTransactions={fixedTxs}
                 onManage={() => nav('/settings/bills')}
+                monthKey={monthKey}
+                readOnly={isClosed || isPast}
               />
             )}
           </>
         )}
       </div>
 
-      {isCurrent && (
+      {isCurrent && !isClosed && (
         <div className="fixed bottom-6 right-5 left-5 flex items-end justify-between pointer-events-none">
           <Link
             to="/add/income"

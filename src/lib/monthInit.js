@@ -140,35 +140,51 @@ export async function syncCurrentMonthFixedItems({ monthKey, uid }) {
   for (const [billId, bill] of billsById) {
     const day = Math.min(Math.max(bill.dueDay || 1, 1), 28);
     const date = `${monthPrefix}-${String(day).padStart(2, '0')}`;
+    const isVariable = bill.amountType === 'variable';
     const existing = existingByBillId.get(billId);
     if (existing) {
-      const changed =
-        existing.data.amount !== bill.amount ||
-        existing.data.vendor !== bill.name ||
-        existing.data.date !== date ||
-        existing.data.categoryId != null;
-      if (changed) {
-        batch.update(existing.ref, {
-          amount: bill.amount,
-          vendor: bill.name,
-          date,
-          categoryId: null,
-        });
+      const d = existing.data;
+      const reconciled = d.actualAmount != null;
+      const patch = {};
+      // Name/date/categoryId can always be synced.
+      if (d.vendor !== bill.name) patch.vendor = bill.name;
+      if (d.date !== date) patch.date = date;
+      if (d.categoryId != null) patch.categoryId = null;
+      // Amount syncing only when unreconciled — never overwrite a reconciled actual.
+      if (!reconciled) {
+        if (d.amount !== bill.amount) patch.amount = bill.amount;
+        if (isVariable) {
+          if (d.estimatedAmount !== bill.amount) patch.estimatedAmount = bill.amount;
+          if (!d.isVariable) patch.isVariable = true;
+          if (d.actualAmount === undefined) patch.actualAmount = null;
+          if (d.reconciledAt === undefined) patch.reconciledAt = null;
+        }
+      }
+      if (Object.keys(patch).length > 0) {
+        batch.update(existing.ref, patch);
         writes++;
       }
     } else {
       const ref = doc(transactionsCol(monthKey));
-      batch.set(ref, {
+      const base = {
         vendor: bill.name,
         categoryId: null,
         amount: bill.amount,
         description: '',
         date,
         isFixed: true,
+        isRecurring: true,
         fixedBillId: billId,
         createdBy: uid || null,
         createdAt: serverTimestamp(),
-      });
+      };
+      if (isVariable) {
+        base.isVariable = true;
+        base.estimatedAmount = bill.amount;
+        base.actualAmount = null;
+        base.reconciledAt = null;
+      }
+      batch.set(ref, base);
       writes++;
     }
   }
@@ -238,18 +254,27 @@ export async function applyFixedBillsForMonth({ monthKey, uid }) {
   for (const bill of bills) {
     const day = Math.min(Math.max(bill.dueDay || 1, 1), 28);
     const date = `${y}-${String(m).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    const isVariable = bill.amountType === 'variable';
     const txRef = doc(transactionsCol(monthKey));
-    batch.set(txRef, {
+    const payload = {
       vendor: bill.name,
       categoryId: null,
       amount: bill.amount,
       description: '',
       date,
       isFixed: true,
+      isRecurring: true,
       fixedBillId: bill.id,
       createdBy: uid || null,
       createdAt: serverTimestamp(),
-    });
+    };
+    if (isVariable) {
+      payload.isVariable = true;
+      payload.estimatedAmount = bill.amount;
+      payload.actualAmount = null;
+      payload.reconciledAt = null;
+    }
+    batch.set(txRef, payload);
     applied++;
   }
 

@@ -30,9 +30,15 @@ export default function SettingsIndex({ onLogout }) {
         />
         <Row
           to="/settings/bills"
-          label="Fixed Bills"
+          label="Recurring Bills"
           value={formatDollars(fixedBillsTotal)}
           detail={`${bills.length} ${bills.length === 1 ? 'bill' : 'bills'}`}
+        />
+        <Row
+          to="/history"
+          label="Past Months"
+          value=""
+          detail="Closed month summaries"
         />
         <Row
           to="/settings/categories"

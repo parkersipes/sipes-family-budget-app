@@ -25,34 +25,46 @@ export default function FixedBillsManager({ bills }) {
       </div>
       {sorted.length === 0 && (
         <div className="text-ink-muted text-sm border border-dashed border-line rounded-lg p-4 text-center">
-          No fixed bills yet.
+          No recurring bills yet.
         </div>
       )}
       <div className="divide-y divide-line border border-line rounded-xl bg-bg-raised">
-        {sorted.map((b) => (
-          <div key={b.id} className="flex items-center justify-between px-4 py-3 gap-3">
-            <button
-              onClick={() => setEditing(b)}
-              className="flex items-center gap-2.5 min-w-0 flex-1 text-left press"
-            >
-              <LockIcon />
-              <div className="min-w-0">
-                <div className="text-ink truncate">{b.name}</div>
-                <div className="text-ink-faint text-xs truncate">day {b.dueDay || 1}</div>
-              </div>
-            </button>
-            <div className="flex items-center gap-3">
-              <div className="tnum text-ink">{formatDollars(b.amount)}</div>
+        {sorted.map((b) => {
+          const variable = b.amountType === 'variable';
+          return (
+            <div key={b.id} className="flex items-center justify-between px-4 py-3 gap-3">
               <button
-                onClick={() => onDelete(b)}
-                className="text-ink-faint press p-1"
-                aria-label="Delete"
+                onClick={() => setEditing(b)}
+                className="flex items-center gap-2.5 min-w-0 flex-1 text-left press"
               >
-                <TrashIcon />
+                <LockIcon />
+                <div className="min-w-0">
+                  <div className="text-ink truncate">{b.name}</div>
+                  <div className="text-ink-faint text-xs truncate flex items-center gap-1.5">
+                    <span>day {b.dueDay || 1}</span>
+                    <span>·</span>
+                    <span className={variable ? 'text-accent' : 'text-ink-muted'}>
+                      {variable ? 'Variable' : 'Fixed'}
+                    </span>
+                  </div>
+                </div>
               </button>
+              <div className="flex items-center gap-3">
+                <div className="tnum text-ink">
+                  {variable && <span className="text-ink-faint text-xs mr-1">est.</span>}
+                  {formatDollars(b.amount)}
+                </div>
+                <button
+                  onClick={() => onDelete(b)}
+                  className="text-ink-faint press p-1"
+                  aria-label="Delete"
+                >
+                  <TrashIcon />
+                </button>
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       <AddFixedBillSheet
